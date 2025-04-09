@@ -76,7 +76,7 @@ class SearchByProperty(Tool):
 
     def __init__(self):
         super().__init__()
-        self.materials_df = pd.read_csv('Data/material_properties_minmax.csv')
+        self.materials_df = pd.read_csv('material_properties_minmax.csv')
 
     def forward(self, properties: dict) -> str:
         try:
@@ -119,7 +119,7 @@ class SearchByProperty(Tool):
             return f"Error: {str(e)}"
         
 # Create tool for searching materials database
-class SearchByProperty(Tool):
+class SearchByMaterial(Tool):
     name = "search_by_material"
     description = """
     Search a material database for a material to find its properties.
@@ -127,7 +127,7 @@ class SearchByProperty(Tool):
 
     inputs = {
         "material": {
-            "type": "any",
+            "type": "string",
             "description": "The material to search for."
         }
     }
@@ -135,44 +135,20 @@ class SearchByProperty(Tool):
 
     def __init__(self):
         super().__init__()
-        self.materials_df = pd.read_csv('Data/material_properties_minmax.csv')
+        self.materials_df = pd.read_csv('material_properties_minmax.csv')
 
-    def forward(self, properties: dict) -> str:
+    def forward(self, material: str) -> str:
         try:
-            # Initialize a list to store matching materials
-            matching_materials = []
+            # Filter the dataframe for the specified material
+            material_row = self.materials_df[self.materials_df["Material"].str.contains(material.lower(), case=False, na=False)]
+            
+            if material_row.empty:
+                return f"No properties found for material: '{material}'."
 
-            # Loop through each material in the database
-            for index, row in self.materials_df.iterrows():
-                match = True
+            # Convert the row to a dictionary of properties (excluding index)
+            properties = material_row.to_dict(orient='records')[0]
 
-                # Check each property in the provided dictionary
-                for property_name, limits in properties.items():
-                    try:
-                        # Check if the property exists in the dataframe
-                        if f"{property_name} min" not in row or f"{property_name} max" not in row:
-                            return f"Error: Property '{property_name}' not found. Ensure the property exists in the available list and try again."
-
-                        if "min" in limits:
-                            min_value = limits["min"]
-                            if row[f"{property_name} max"] < min_value:
-                                match = False
-                                break
-                        if "max" in limits:
-                            max_value = limits["max"]
-                            if row[f"{property_name} min"] > max_value:
-                                match = False
-                                break
-                            
-                    except Exception as e:
-                        return f"Error: {str(e)}"
-                
-                # If the material matches all criteria, add it to the results
-                if match:
-                    matching_materials.append(row["Material"])
-
-            # Return the list of matching materials
-            return str(matching_materials) if matching_materials else "No materials found matching the criteria."
+            return str(properties)
 
         except Exception as e:
             return f"Error: {str(e)}"
@@ -198,47 +174,26 @@ Here are some examples:
 ---
 Task: "You are tasked with designing a cutting board. It should be lightweight. What material would you recommend for this application?"
 
-Thought: I will search Wikipedia to find the necessary properties of cutting boards.
+Thought: I will search Wikipedia to find common materials used in cutting boards.
 Code:
 ```py
-observation = wikipedia_search(query = 'necessary properties of cutting boards')
+observation = wikipedia_search(query = 'common materials used in cutting boards')
 print(observation)
 ```<end_action>
-Observation: "A good cutting board material must be soft, easy to clean, and non-abrasive, but not fragile to the point of being destroyed."
+Observation: "A material commonly used in cutting boards is wood."
 
-Thought: Now I know what the necessary properties of cutting boards are. I will search the materials database to find materials that are lightweight and durable.
+Thought: Now I will search the materials database to find properties of wood.
 Code:
 ```py
-observation = materials_search(properties={
-    "Density": {"max": 1.0},  
-    "Young's modulus": {"min": 2.0, "max": 10.0},  
-    "Yield strength": {"min": 20.0},  
-    "Fracture toughness (plane-strain)": {"min": 3.0}
-})
+observation = search_by_material(material="wood")
 print(observation)
 ```<end_action>
-Observation: "Matching materials are wood and cellulose polymers (CA)."
+Observation: "{'Material': 'Wood', 'Material category': 'Natural materials', 'Melting/glass temperature min': None, 'Melting/glass temperature max': None, 'Density min': 0.3, 'Density max': 1.3, 'Young's modulus min': 5.0, 'Young's modulus max': 18.0, 'Yield strength min': 30.0, 'Yield strength max': 100.0, 'Tensile strength min': 40.0, 'Tensile strength max': 150.0, 'Fracture toughness (plane-strain) min': 2.0, 'Fracture toughness (plane-strain) max': 6.0, 'Thermal conductivity min': 0.1, 'Thermal conductivity max': 0.2, 'Thermal expansion min': 3.0, 'Thermal expansion max': 6.0, 'Production energy min': 0.5, 'Production energy max': 2.0, 'CO2 burden min': 0.01, 'CO2 burden max': 0.1, 'Flammability resistance': 'E', 'Fresh water resistance': 'C', 'Salt water resistance': 'D', 'Sunlight (UV) resistance': 'C', 'Wear resistance': 'C'}"
 
-Thought: I will search Arxiv to see what research says about using wood in cutting boards.
+Thought: Now I know that wood is a lightweight material commonly used in cutting boards.Let's return the result.
 Code:
 ```py
-observation = arxiv_search(query = 'wood as material for cutting boards')
-print(observation)
-```<end_action>
-Observation: "Studies show that wood is commonly used for cutting boards due to its natural antibacterial properties, adequate hardness, and ease of maintenance compared to plastic."
-
-Thought: Now I know that wood is a lightweight material commonly used in cutting boards. I will search Arxiv to see what research says about using cellulose polymers in cutting boards.
-Code:
-```py
-observation = arxiv_search(query = 'cellulose polymers as material for cutting boards')
-print(observation)
-```<end_action>
-Observation: "Paper-based cellulose composites are gaining popularity for use in cutting boards due to their sustainability, durability, and non-porous nature, making them a viable alternative to traditional wood and plastic boards."
-
-Thought: Now I know wood and paper-based cellulose composites meet the necessary criteria. Let's return the result.
-Code:
-```py
-final_answer('wood or paper-based cellulose composites')
+final_answer('woods')
 ```<end_action>
 ---
 Task: "You are tasked with designing a cooking pan. It should have a high melting point. What material would you recommend for this application?"
@@ -254,7 +209,7 @@ Observation: "High performance cookware is made from materials that combine high
 Thought: Now I know what the necessary properties of cooking pans are. I will search the materials database to find materials that to find materials with a high melting/glass temperature along with good thermal conductivity and strength.
 Code:
 ```py
-observation = materials_search(properties={
+observation = search_by_property(properties={
     "Melting/glass temperature": {"min": 1500.0},
     "Thermal conductivity": {"min": 30.0},
     "Yield strength": {"min": 500.0},
