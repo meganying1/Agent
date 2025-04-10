@@ -26,6 +26,6 @@ setup(
     python_requires='>=3.7',
     include_package_data=True,
     package_data={
-        '': ['material_properties_minmax.csv'],
+        'agent': ['material_properties_minmax.csv']
     },
 )
