@@ -1,6 +1,6 @@
 import llama_cpp
 from transformers import ReactCodeAgent
-from agent_helper import SEARCH_PROMPT, WikipediaSearch, ArxivSearch, SearchByProperty, SearchByMaterial
+from .agent_helper import SEARCH_PROMPT, WikipediaSearch, ArxivSearch, SearchByProperty, SearchByMaterial
 
 ##########################################################################################
 
